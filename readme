@@ -1,0 +1,39 @@
+About the multi container app that is deployed:
+ It consists of a Python app which maintains a counter in a Redis instance and increments the counter whenever you visit it.
+
+Steps taken:
+1. Created a three instances in docker playground - 1 master and 2 worker nodes
+
+2. ran the following command in master node to initialize the cluster/swarm:
+docker swarm init --advertise-addr 192.168.0.28
+
+3. ran following command on each worker node to join the worker node to master:
+docker swarm join --token SWMTKN-1-57ntq4fscpj8928t9lefe4wp2nm3ikvo7vfq5y8r1k4bgp030q-apy4ub6klyu08yl60k20ydp44 192.168.0.28:2377
+
+4. ran following command on master node to check all the nodes
+docker node ls
+
+5. Setting up docker registry on master node(throwaway registry)
+docker service create --name registry --publish published=5000,target=5000 registry:2
+
+6. Started the multicontainer(web+reddis) app with following command:
+docker-compose up -d
+
+7. push genrerated images to registry
+docker-compose push
+
+8. Now deploy the stack to the swarm - this deploys the multi container app to all the nodes
+docker stack deploy --compose-file docker-compose.yml stackdemo
+
+9.Check that it’s running with:
+ docker stack services stackdemo
+
+10. access any node in the swarm on port 8000 and get routed to the app:
+curl http://address-of-other-node:8000
+
+11. Create persistent volume for redis instances
+
+docker service create -d --replicas=4 --name redis-persistent-service --mount source=myvol2,target=/app redis:alpine
+
+
+
